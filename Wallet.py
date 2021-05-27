@@ -55,7 +55,7 @@ class WalletWindow(Tk):
 
         self.config_button = Button(self.b_frame, width=10, font=("Times New Roman", 12), text="Configure\n⚙", command=self.configure_command)
         self.refresh_button = Button(self.b_frame, width=10, font=("Times New Roman", 12), text="Refresh\n⟳", command=self.refresh_command)
-        self.pay_button = Button(self.b_frame, width=10, font=("Times New Roman", 12), text="Pay\n💳", command=self.pay_command)
+        self.pay_button = Button(self.b_frame, width=10, font=("Times New Roman", 12), text="Pay\n$", command=self.pay_command)
 
         # packing
         self.title.pack(side=TOP)
@@ -208,7 +208,7 @@ class WalletWindow(Tk):
         amount_label = Label(self.pay_window, text="Amount")
         amount_entry = Entry(self.pay_window)
 
-        pay_button = Button(self.pay_window, text="💳", command=lambda: self.process_payment(self.pay_window, destination_entry, amount_entry))
+        pay_button = Button(self.pay_window, text="PAY", command=lambda: self.process_payment(self.pay_window, destination_entry, amount_entry))
 
         destination_label.pack(side=TOP, padx=20)
         destination_entry.pack(side=TOP, padx=20)
