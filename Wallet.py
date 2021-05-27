@@ -301,7 +301,7 @@ class WalletWindow(Tk):
                                     block_number = int(data[324:330], 16)
                                     t_number = int(data[330:332], 16)
 
-                                    inputs.append((input_key, block_number, t_number))
+                                    inputs.append((input_key, block_number, t_number, signature))
                                     data = data[332:]
                                 outputs = []
                                 for x in range(output_amount):
