@@ -160,7 +160,7 @@ class WalletWindow(Tk):
                         messagebox.showerror(title="Connection Error",message="Failed to receive reply from wallet server.\nPlease try again by refreshing.\nError: {}".format(e))
                     else:
 
-                        self.title_text.set(data[1:9])
+                        self.title_text.set("{} SittCoin".format(int(data[1:9], 16)))
 
                         data = data[9:]
 
