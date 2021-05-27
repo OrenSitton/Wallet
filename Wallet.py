@@ -288,7 +288,7 @@ class WalletWindow(Tk):
                                 key = RSA.import_key(bytes.fromhex(self.config("private key")))
                                 hasher = SHA256.new(data.encode())
                                 signer = PKCS1_v1_5.new(key)
-                                signature = signer.sign(hasher)
+                                signature = signer.sign(hasher).hex()
 
                                 timestamp = int(datetime.datetime.now().timestamp())
                                 input_amount = int(data[:1], 16)
