@@ -13,6 +13,8 @@ from tkinter.scrolledtext import *
 
 from Dependencies.Transaction import Transaction
 
+connection_errors = (OSError, ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, TimeoutError)
+
 
 class WalletWindow(Tk):
     def __init__(self):
@@ -134,7 +136,7 @@ class WalletWindow(Tk):
                                      e))
         else:
             try:
-                sock.send(self.build_wallet_request_message(self.config("public key")))
+                sock.send(self.build_wallet_request_message(self.config("public key")).encode())
             except (
             ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, OSError) as e:
                 messagebox.showerror(title="Connection Error",
