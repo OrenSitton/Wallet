@@ -317,7 +317,7 @@ class WalletWindow(Tk):
                                 msg = "{}{}".format(hexify(len(msg), 5), msg)
 
                                 try:
-                                    sock.send(msg)
+                                    sock.send(msg.encode())
                                 except connection_errors as e:
                                     pass
                                 else:
