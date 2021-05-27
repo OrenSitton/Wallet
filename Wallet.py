@@ -155,7 +155,7 @@ class WalletWindow(Tk):
                 else:
                     size = int(size, 16)
                     try:
-                        data = sock.recv(size)
+                        data = sock.recv(size).decode()
                     except (ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, OSError) as e:
                         messagebox.showerror(title="Connection Error",message="Failed to receive reply from wallet server.\nPlease try again by refreshing.\nError: {}".format(e))
                     else:
@@ -167,7 +167,7 @@ class WalletWindow(Tk):
                         t_count = int(data[:6], 16)
                         data = data[6:]
                         self.transactions = []
-                        for x in range(int(t_count, 16)):
+                        for x in range(t_count):
                             transaction_size = int(data[:5], 16)
 
                             transaction = Transaction.from_network_format(data[5:5 + transaction_size])
@@ -263,13 +263,13 @@ class WalletWindow(Tk):
                     return
                 else:
                     try:
-                        size = sock.recv(5)
+                        size = sock.recv(5).decode()
                     except (OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError, ConnectionError) as e:
                         messagebox.showerror(title="Connection Error", message="Sent request to server, but failed to receive reply from server.\nError: {}".format(e))
                         return
                     else:
                         try:
-                            data = sock.recv(int(size, 16))
+                            data = sock.recv(int(size, 16)).decode()
                         except (OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError, ConnectionError) as e:
                             messagebox.showerror(title="Connection Error", message="Sent request to server, but failed to receive reply to server.\nError: {}".format(e))
                             return
@@ -322,7 +322,7 @@ class WalletWindow(Tk):
                                     pass
                                 else:
                                     try:
-                                        size = sock.recv(5)
+                                        size = sock.recv(5).decode()
                                     except connection_errors as e:
                                         messagebox.showerror(title="Connection Error",
                                                              message="Sent request to server, but failed to receive reply from server.\nError: {}".format(
@@ -330,7 +330,7 @@ class WalletWindow(Tk):
                                         return
                                     else:
                                         try:
-                                            data = sock.recv(int(size, 16))
+                                            data = sock.recv(int(size, 16)).decode()
                                         except (
                                         OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError,
                                         ConnectionError) as e:
