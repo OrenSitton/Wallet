@@ -415,7 +415,7 @@ class WalletWindow(Tk):
 
     @staticmethod
     def build_wallet_request_message(src_key):
-        return "00145i{}".format(src_key)
+        return "00145a{}".format(src_key)
 
     @staticmethod
     def build_payment_message(src_key, dest_key, amount):
@@ -431,7 +431,7 @@ class WalletWindow(Tk):
         :rtype: str
         """
 
-        msg = "0028Ck{}{}{}".format(src_key, hexify(amount, 4), dest_key)
+        msg = "0028Cc{}{}{}".format(src_key, hexify(amount, 4), dest_key)
         return msg
         pass
 
