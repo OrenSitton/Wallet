@@ -305,8 +305,8 @@ class WalletWindow(Tk):
                                     data = data[332:]
                                 outputs = []
                                 for x in range(output_amount):
-                                    output_address = data[:1]
-                                    output_amount = int(data[1:7], 16)
+                                    output_address = data[:324]
+                                    output_amount = int(data[324:328], 16)
 
                                     outputs.append((output_address, output_amount))
 
