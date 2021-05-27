@@ -321,29 +321,7 @@ class WalletWindow(Tk):
                                 except connection_errors as e:
                                     pass
                                 else:
-                                    try:
-                                        size = sock.recv(5).decode()
-                                    except connection_errors as e:
-                                        messagebox.showerror(title="Connection Error",
-                                                             message="Sent request to server, but failed to receive reply from server.\nError: {}".format(
-                                                                 e))
-                                        return
-                                    else:
-                                        try:
-                                            data = sock.recv(int(size, 16)).decode()
-                                        except (
-                                        OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError,
-                                        ConnectionError) as e:
-                                            messagebox.showerror(title="Connection Error",
-                                                                 message="Sent request to server, but failed to receive reply to server.\nError: {}".format(
-                                                                     e))
-                                            return
-                                        else:
-                                            try:
-                                                sock.close()
-                                            except connection_errors as e:
-                                                pass
-                                            messagebox.showinfo(title="Sent Transaction!", message="Transaction successfully sent to server!")
+                                    messagebox.showinfo(title="Sent Transaction!", message="Transaction successfully sent to server!")
 
                             else:
                                 try:
