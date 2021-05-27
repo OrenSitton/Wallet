@@ -76,3 +76,6 @@ def hexify_string(string):
 def dehexify_string(hex_string):
     return bytes.fromhex(hex_string).decode()
     pass
+
+def sign_string(message, private_key):
+    pass

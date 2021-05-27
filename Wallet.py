@@ -10,8 +10,13 @@ from tkinter import Entry
 from tkinter import *
 from tkinter import messagebox
 from tkinter.scrolledtext import *
+import datetime
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
 
 from Dependencies.Transaction import Transaction
+from Dependencies.methods import dehexify_string, hexify
 
 connection_errors = (OSError, ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, TimeoutError)
 
@@ -24,7 +29,7 @@ class WalletWindow(Tk):
         super().resizable(width=False, height=False)
         super().protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        self.transactions = ["1", "2", "3", "4", "5"]
+        self.transactions = []
         self.wallet_amount = 0
         self.index = 0
 
@@ -48,8 +53,7 @@ class WalletWindow(Tk):
         # buttons
         self.b_frame = Frame(self)
 
-        self.config_button = Button(self.b_frame, width=10, font=("Times New Roman", 12), text="Configure\n⚙",
-                                    command=self.configure_command)
+        self.config_button = Button(self.b_frame, width=10, font=("Times New Roman", 12), text="Configure\n⚙", command=self.configure_command)
         self.refresh_button = Button(self.b_frame, width=10, font=("Times New Roman", 12), text="Refresh\n⟳", command=self.refresh_command)
         self.pay_button = Button(self.b_frame, width=10, font=("Times New Roman", 12), text="Pay\n💳", command=self.pay_command)
 
@@ -131,17 +135,12 @@ class WalletWindow(Tk):
             sock.connect((self.config("server ip address"), self.config("server port")))
 
         except (ConnectionError, ConnectionResetError, ConnectionRefusedError, OSError) as e:
-            messagebox.showerror(title="Connection Error",
-                                 message="Failed to connect to wallet server.\nPlease try again by refreshing.\nError: {}".format(
-                                     e))
+            messagebox.showerror(title="Connection Error", message="Failed to connect to wallet server.\nPlease try again by refreshing.\nError: {}".format(e))
         else:
             try:
                 sock.send(self.build_wallet_request_message(self.config("public key")).encode())
-            except (
-            ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, OSError) as e:
-                messagebox.showerror(title="Connection Error",
-                                     message="Failed to send request to wallet server.\nPlease try again by refreshing.\n Error: {}".format(
-                                         e))
+            except (ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, OSError) as e:
+                messagebox.showerror(title="Connection Error", message="Failed to send request to wallet server.\nPlease try again by refreshing.\n Error: {}".format(e))
             else:
                 size_length = 5
                 try:
@@ -150,21 +149,15 @@ class WalletWindow(Tk):
                     while size.replace('f', '') == '':
                         size_length *= 2
                         size = sock.recv(size_length).decode()
-                except (
-                ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, OSError) as e:
-                    messagebox.showerror(title="Connection Error",
-                                         message="Failed to receive reply from wallet server.\nPlease try again by refreshing.\nError: {}".format(
-                                             e))
+                except (ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, OSError) as e:
+                    messagebox.showerror(title="Connection Error", message="Failed to receive reply from wallet server.\nPlease try again by refreshing.\nError: {}".format(e))
 
                 else:
                     size = int(size, 16)
                     try:
                         data = sock.recv(size)
-                    except (ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError,
-                            OSError) as e:
-                        messagebox.showerror(title="Connection Error",
-                                             message="Failed to receive reply from wallet server.\nPlease try again by refreshing.\nError: {}".format(
-                                                 e))
+                    except (ConnectionError, ConnectionResetError, ConnectionRefusedError, ConnectionAbortedError, OSError) as e:
+                        messagebox.showerror(title="Connection Error",message="Failed to receive reply from wallet server.\nPlease try again by refreshing.\nError: {}".format(e))
                     else:
 
                         self.title_text.set(data[1:9])
@@ -248,6 +241,9 @@ class WalletWindow(Tk):
             messagebox.showerror(title="Input Error", message="Amount should be integer")
             return
         else:
+            if amount > 65536 or amount <=0:
+                messagebox.showerror(title="Invalid Coin Amount", message="Amount must be between 1 and 65535")
+                return
             # send reqeust to server
 
             sock = socket.socket()
@@ -257,27 +253,107 @@ class WalletWindow(Tk):
 
             except (OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError, ConnectionError) as e:
                 messagebox.showerror(title="Connection Error", message="Failed to connect to server.\nPlease try again.\nError: {}".format(e))
+                return
 
             else:
                 try:
                     sock.send(msg.encode())
                 except (OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError, ConnectionError) as e:
                     messagebox.showerror(title="Connection Error", message="Failed to send payment message to server.\nPlease try again.\nError: {}".format(e))
+                    return
                 else:
-                    messagebox.showinfo(message="Sent Transaction!\nTransaction is now pending @ wallet server.")
-
                     try:
                         size = sock.recv(5)
                     except (OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError, ConnectionError) as e:
-                        messagebox.showerror(title="Connection Error", message="Failed to receive reply to server.\nError: {}".format(e))
+                        messagebox.showerror(title="Connection Error", message="Sent request to server, but failed to receive reply from server.\nError: {}".format(e))
+                        return
                     else:
                         try:
                             data = sock.recv(int(size, 16))
                         except (OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError, ConnectionError) as e:
-                            messagebox.showerror(title="Connection Error", message="Failed to receive reply to server.\nError: {}".format(e))
+                            messagebox.showerror(title="Connection Error", message="Sent request to server, but failed to receive reply to server.\nError: {}".format(e))
+                            return
                         else:
-                            sock.close()
-                            messagebox.showinfo(title="Server Response", message=self.parse_server_response(data))
+                            if data[:1] == 'f':
+                                e = self.handle_error_message(data)
+                                messagebox.showerror(title="Error", message="Server responded with an error.\n Error: "
+                                                                            "{}".format(e))
+                                try:
+                                    sock.close()
+                                except connection_errors:
+                                    pass
+
+                            elif data[:1] == 'd':
+                                data = data[1:]
+                                key = RSA.import_key(bytes.fromhex(self.config("private key")))
+                                hasher = SHA256.new(data)
+                                signer = PKCS1_v1_5.new(key)
+                                signature = signer.sign(hasher)
+
+                                timestamp = datetime.datetime.now().timestamp()
+                                input_amount = data[:1]
+                                output_amount = data[1:2]
+
+                                data = data[2:]
+                                inputs = []
+                                for x in range(input_amount):
+                                    input_key = data[:324]
+                                    block_number = int(data[324:330], 16)
+                                    t_number = int(data[330:332], 16)
+
+                                    inputs.append((input_key, block_number, t_number))
+                                    data = data[332:]
+                                outputs = []
+                                for x in range(output_amount):
+                                    output_address = data[:1]
+                                    output_amount = int(data[1:7], 16)
+
+                                    outputs.append((output_address, output_amount))
+
+                                t = Transaction(timestamp, inputs, outputs)
+
+                                msg = t.network_format()
+
+                                msg = "{}{}".format(hexify(len(msg), 5), msg)
+
+                                try:
+                                    sock.send(msg)
+                                except connection_errors as e:
+                                    pass
+                                else:
+                                    try:
+                                        size = sock.recv(5)
+                                    except connection_errors as e:
+                                        messagebox.showerror(title="Connection Error",
+                                                             message="Sent request to server, but failed to receive reply from server.\nError: {}".format(
+                                                                 e))
+                                        return
+                                    else:
+                                        try:
+                                            data = sock.recv(int(size, 16))
+                                        except (
+                                        OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError,
+                                        ConnectionError) as e:
+                                            messagebox.showerror(title="Connection Error",
+                                                                 message="Sent request to server, but failed to receive reply to server.\nError: {}".format(
+                                                                     e))
+                                            return
+                                        else:
+                                            try:
+                                                sock.close()
+                                            except connection_errors as e:
+                                                pass
+                                            messagebox.showinfo(title="Sent Transaction!", message="Transaction successfully sent to server!")
+
+                            else:
+                                try:
+                                    sock.close()
+                                except connection_errors:
+                                    pass
+                                messagebox.showerror(title="Unrecognized Response", message="Server responded with an unrecognized request.")
+
+                            # check if server reponse is valid
+                            # sign & send
                             window.destroy()
 
     def next_command(self):
@@ -354,19 +430,23 @@ class WalletWindow(Tk):
         :return:
         :rtype: str
         """
+
+        msg = "0028Ck{}{}{}".format(src_key, hexify(amount, 4), dest_key)
+        return msg
         pass
 
     @staticmethod
     def parse_server_response(data):
         pass
 
-    pass
+    @staticmethod
+    def handle_error_message(data):
+        data = data[1:]
+        return dehexify_string(data)
 
 
 def main():
-    window = WalletWindow()
-    window.mainloop()
-    pass
+    WalletWindow().mainloop()
 
 
 if __name__ == '__main__':
