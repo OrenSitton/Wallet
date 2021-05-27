@@ -164,11 +164,11 @@ class WalletWindow(Tk):
 
                         data = data[9:]
 
-                        t_count = data[:6]
+                        t_count = int(data[:6], 16)
                         data = data[6:]
                         self.transactions = []
                         for x in range(int(t_count, 16)):
-                            transaction_size = data[:5]
+                            transaction_size = int(data[:5], 16)
 
                             transaction = Transaction.from_network_format(data[5:5 + transaction_size])
                             self.transactions.append(transaction)
