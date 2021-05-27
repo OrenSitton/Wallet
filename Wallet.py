@@ -291,8 +291,8 @@ class WalletWindow(Tk):
                                 signature = signer.sign(hasher)
 
                                 timestamp = datetime.datetime.now().timestamp()
-                                input_amount = data[:1]
-                                output_amount = data[1:2]
+                                input_amount = int(data[:1], 16)
+                                output_amount = int(data[1:2], 16)
 
                                 data = data[2:]
                                 inputs = []
