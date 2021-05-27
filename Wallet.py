@@ -286,7 +286,7 @@ class WalletWindow(Tk):
                             elif data[:1] == 'd':
                                 data = data[1:]
                                 key = RSA.import_key(bytes.fromhex(self.config("private key")))
-                                hasher = SHA256.new(data)
+                                hasher = SHA256.new(b"{}".format(data))
                                 signer = PKCS1_v1_5.new(key)
                                 signature = signer.sign(hasher)
 
