@@ -34,9 +34,12 @@ class WalletWindow(Tk):
         self.index = 0
 
         # title
+        self.header = Label(self, width=30, text="SittCoin Wallet", font=("Palatino", 20))
+        self.header.pack(side=TOP, pady=10)
+
         self.title_text = StringVar()
         self.title_text.set("{:,} SittCoin".format(self.wallet_amount))
-        self.title = Label(self, width=25, textvariable=self.title_text, font=("Times New Roman", 25))
+        self.title = Label(self, width=25, textvariable=self.title_text, font=("Times New Roman", 15))
 
         # transaction data
         self.t_frame = Frame(self)
@@ -76,6 +79,9 @@ class WalletWindow(Tk):
         self.pay_window = 0
 
         self.refresh_command()
+        self.t_data["state"] = "normal"
+        self.t_data.insert(END, "Sample transaction data")
+        self.t_data["state"] = "disabled"
 
     def configure_command(self):
         config_window = Tk()
@@ -216,7 +222,7 @@ class WalletWindow(Tk):
         amount_label.pack(side=TOP, padx=20)
         amount_entry.pack(side=TOP, padx=20)
 
-        pay_button.pack(side=TOP)
+        pay_button.pack(side=TOP, pady=10)
 
         self.pay_window.mainloop()
         pass
@@ -225,6 +231,7 @@ class WalletWindow(Tk):
 
         destination_address = destination_entry.get()
         amount = amount_entry.get()
+
         try:
             int(destination_address, 16)
         except ValueError:
@@ -269,7 +276,7 @@ class WalletWindow(Tk):
                         return
                     else:
                         try:
-                            data = sock.recv(int(size, 16)).decode()
+                            data = sock.recv(int(size, 16) + 1).decode()
                         except (OSError, ConnectionAbortedError, ConnectionRefusedError, ConnectionResetError, ConnectionError) as e:
                             messagebox.showerror(title="Connection Error", message="Sent request to server, but failed to receive reply to server.\nError: {}".format(e))
                             return
@@ -284,15 +291,15 @@ class WalletWindow(Tk):
                                     pass
 
                             elif data[:1] == 'd':
-                                data = data[1:]
+                                data = data[1:] # data is now the unsigned transaction received from the server
                                 key = RSA.import_key(bytes.fromhex(self.config("private key")))
-                                hasher = SHA256.new(data.encode())
+                                hasher = SHA256.new(data.encode("utf-8"))
                                 signer = PKCS1_v1_5.new(key)
                                 signature = signer.sign(hasher).hex()
 
                                 timestamp = int(datetime.datetime.now().timestamp())
-                                input_amount = int(data[:1], 16)
-                                output_amount = int(data[1:2], 16)
+                                input_amount = int(data[0], 16)
+                                output_amount = int(data[1], 16)
 
                                 data = data[2:]
                                 inputs = []
@@ -303,10 +310,13 @@ class WalletWindow(Tk):
 
                                     inputs.append((input_key, block_number, t_number, signature))
                                     data = data[332:]
+
                                 outputs = []
                                 for x in range(output_amount):
                                     output_address = data[:324]
                                     output_amount = int(data[324:328], 16)
+
+                                    data = data[328:]
 
                                     outputs.append((output_address, output_amount))
 
@@ -319,9 +329,14 @@ class WalletWindow(Tk):
                                 try:
                                     sock.send(msg.encode())
                                 except connection_errors as e:
-                                    pass
+                                    messagebox.showerror(title="Connection Error!", message="Failed to finalize transaction with server\nError: {}".format(e))
                                 else:
                                     messagebox.showinfo(title="Sent Transaction!", message="Transaction successfully sent to server!")
+
+                                    try:
+                                        sock.close()
+                                    except connection_errors:
+                                        pass
 
                             else:
                                 try:
@@ -330,9 +345,7 @@ class WalletWindow(Tk):
                                     pass
                                 messagebox.showerror(title="Unrecognized Response", message="Server responded with an unrecognized request.")
 
-                            # check if server reponse is valid
-                            # sign & send
-                            window.destroy()
+                            self.pay_on_closing()
 
     def next_command(self):
         self.index += 1
@@ -409,9 +422,8 @@ class WalletWindow(Tk):
         :rtype: str
         """
 
-        msg = "0028Cc{}{}{}".format(src_key, hexify(amount, 4), dest_key)
+        msg = "0028dc{}{}{}".format(src_key, hexify(amount, 4), dest_key)
         return msg
-        pass
 
     @staticmethod
     def parse_server_response(data):
