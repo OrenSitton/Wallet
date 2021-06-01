@@ -93,7 +93,7 @@ class Transaction:
             string_representation += "{}: {}.{}  |  {}\n".format(inp[0], inp[1], inp[2], inp[3])
         string_representation += "Outputs:\n"
         for output in self.outputs:
-            string_representation += "{}: {}Bl\n".format(output[0], output[1])
+            string_representation += "{}: {}Sc\n".format(output[0], output[1])
         return string_representation[:-1]
 
     def __gt__(self, other):
